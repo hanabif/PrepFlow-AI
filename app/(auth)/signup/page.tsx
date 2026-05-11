@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
+import React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Eye, EyeOff, Mail, Lock, User, Loader2, Check, X } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, User, Loader2, Check, X, AlertCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 const passwordRequirements = [
@@ -18,7 +19,7 @@ const passwordRequirements = [
 
 export default function SignUpPage() {
   const router = useRouter()
-  const supabase = createClient()
+  const [supabase, setSupabase] = useState<any>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -28,10 +29,27 @@ export default function SignUpPage() {
     password: '',
   })
 
+  // Initialize Supabase client on mount with error handling
+  React.useEffect(() => {
+    try {
+      const client = createClient()
+      setSupabase(client)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to initialize Supabase'
+      setError(message)
+    }
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError(null)
+
+    if (!supabase) {
+      setError('Supabase client not initialized')
+      setIsLoading(false)
+      return
+    }
 
     try {
       // Sign up with Supabase
@@ -59,6 +77,12 @@ export default function SignUpPage() {
   const handleGoogleSignUp = async () => {
     setIsLoading(true)
     setError(null)
+
+    if (!supabase) {
+      setError('Supabase client not initialized')
+      setIsLoading(false)
+      return
+    }
 
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -88,8 +112,25 @@ export default function SignUpPage() {
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+          <div className="flex gap-3">
+            <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 text-sm text-yellow-800 dark:text-yellow-300">
+              <p className="font-medium mb-2">{error}</p>
+              {error.includes('environment variables') && (
+                <div className="text-xs mt-2 space-y-1">
+                  <p className="font-medium">To enable authentication:</p>
+                  <ol className="list-decimal list-inside space-y-1 mt-1">
+                    <li>Click the settings icon (gear) in the top right</li>
+                    <li>Go to "Vars"</li>
+                    <li>Add your Supabase credentials:</li>
+                    <li className="ml-4">NEXT_PUBLIC_SUPABASE_URL</li>
+                    <li className="ml-4">NEXT_PUBLIC_SUPABASE_ANON_KEY</li>
+                  </ol>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
