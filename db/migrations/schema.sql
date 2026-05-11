@@ -1,4 +1,4 @@
--- PrepFlow Database Schema Migration
+y engineers -- PrepFlow Database Schema Migration
 -- Production-ready PostgreSQL schema for Supabase
 -- Run this in Supabase SQL editor: https://app.supabase.com/sql
 -- 
